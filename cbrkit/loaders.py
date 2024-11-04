@@ -12,6 +12,7 @@ from typing import Any, cast
 
 import orjson
 import pandas as pd
+import polars as pl
 import xmltodict
 import yaml as yamllib
 from pydantic import BaseModel
@@ -58,7 +59,7 @@ def python(import_name: str) -> Any:
 
 
 @dataclass(slots=True, frozen=True)
-class pandas(Mapping[int, pd.Series]):
+class pandas(Mapping[int, tuple]):
     df: pd.DataFrame
 
     def __getitem__(self, key: int | str) -> pd.Series:
@@ -69,8 +70,8 @@ class pandas(Mapping[int, pd.Series]):
 
         raise TypeError(f"Invalid key type: {type(key)}")
 
-    def __iter__(self) -> Iterator[int]:
-        return iter(range(self.df.shape[0]))
+    def __iter__(self) -> Iterator[tuple]:
+        return self.df.itertuples(index=False)
 
     def __len__(self) -> int:
         return self.df.shape[0]
@@ -93,31 +94,25 @@ class pandas(Mapping[int, pd.Series]):
 #         return len(self.df)
 
 
-try:
-    import polars as pl
+@dataclass(slots=True, frozen=True)
+class polars(Mapping[int, tuple]):
+    df: pl.DataFrame
 
-    @dataclass(slots=True, frozen=True)
-    class polars(Mapping[int, pl.Series]):
-        df: pl.DataFrame
+    def __getitem__(self, key: int | str) -> pl.Series:
+        if isinstance(key, str):
+            return pl.Series(self.df.select(key))
+        elif isinstance(key, int):
+            return pl.Series(self.df.row(key))
 
-        def __getitem__(self, key: int | str) -> pl.Series:
-            if isinstance(key, str):
-                return self.df[key]
-            elif isinstance(key, int):
-                return pl.Series(self.df.row(key))
+        raise TypeError(f"Invalid key type: {type(key)}")
 
-            raise TypeError(f"Invalid key type: {type(key)}")
+    def __iter__(self) -> Iterator[tuple]:
+        return self.df.iter_rows()
 
-        def __iter__(self) -> Iterator[int]:
-            return iter(range(self.df.shape[0]))
+    def __len__(self) -> int:
+        return self.df.shape[0]
 
-        def __len__(self) -> int:
-            return self.df.shape[0]
-
-        __all__ += ["polars"]
-
-except ImportError:
-    pass
+    __all__ += ["polars"]
 
 
 def csv(path: FilePath) -> dict[int, dict[str, str]]:
