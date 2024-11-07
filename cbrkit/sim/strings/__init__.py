@@ -466,9 +466,9 @@ class glob(SimPairFunc[str, float], SupportsMetadata):
 
 
 def table(
-    entries: Sequence[tuple[str, str, float]]
-    | Mapping[tuple[str, str], float]
-    | FilePath,
+    entries: (
+        Sequence[tuple[str, str, float]] | Mapping[tuple[str, str], float] | FilePath
+    ),
     symmetric: bool = True,
     default: float = 0.0,
 ) -> SimPairFunc[str, float]:

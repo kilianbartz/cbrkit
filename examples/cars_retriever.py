@@ -1,4 +1,5 @@
 import cbrkit
+import polars
 
 retriever = cbrkit.retrieval.build(
     cbrkit.sim.attribute_value(
@@ -11,3 +12,10 @@ retriever = cbrkit.retrieval.build(
     ),
     limit=5,
 )
+df = polars.read_csv("data/cars-1k.csv")
+casebase = cbrkit.loaders.polars(df)
+for x in casebase:
+    print(x)
+    break
+query = {"year": "2010", "make": "Toyota", "miles": 10000}
+print(retriever(casebase, query))

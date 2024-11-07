@@ -123,7 +123,7 @@ class SimMapWrapper[V, S: Float](SimWrapper, SimMapFunc[Any, V, S]):
     def __call__(self, x_map: Mapping[Any, V], y: V) -> SimMap[Any, S]:
         if self.kind == "seq":
             func = cast(SimSeqFunc[V, S], self.func)
-            pairs = [(x, y) for x in x_map.values()]
+            pairs = [(x, y) for x in x_map]
             return {
                 key: sim for key, sim in zip(x_map.keys(), func(pairs), strict=True)
             }
