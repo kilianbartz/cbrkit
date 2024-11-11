@@ -1,4 +1,3 @@
-import itertools
 import statistics
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
@@ -34,36 +33,37 @@ def _correctness_completeness_single(
     k: int | None,
 ) -> tuple[float, float]:
     sorted_run = sorted(run.items(), key=lambda x: x[1], reverse=True)
-    run_ranking = {x[0]: i + 1 for i, x in enumerate(sorted_run[:k])}
+    run_k = {x[0]: x[1] for x in sorted_run[:k]}
 
-    orders = 0
-    concordances = 0
-    disconcordances = 0
+    concordant_pairs = 0
+    discordant_pairs = 0
+    total_pairs = 0
 
-    correctness = 1
-    completeness = 1
+    case_keys = list(qrel.keys())
 
-    for (user_key_1, user_rank_1), (user_key_2, user_rank_2) in itertools.product(
-        qrel.items(), qrel.items()
-    ):
-        if user_key_1 != user_key_2 and user_rank_1 > user_rank_2:
-            orders += 1
+    for i in range(len(case_keys)):
+        for j in range(i + 1, len(case_keys)):
+            idx1, idx2 = case_keys[i], case_keys[j]
+            total_pairs += 1
 
-            system_rank_1 = run_ranking.get(user_key_1)
-            system_rank_2 = run_ranking.get(user_key_2)
+            if idx1 in run_k and idx2 in run_k:
+                qrel1, qrel2 = qrel[idx1], qrel[idx2]
+                run1, run2 = run_k[idx1], run_k[idx2]
 
-            if system_rank_1 is not None and system_rank_2 is not None:
-                if system_rank_1 > system_rank_2:
-                    concordances += 1
-                elif system_rank_1 < system_rank_2:
-                    disconcordances += 1
+                if (qrel1 < qrel2 and run1 < run2) or (qrel1 > qrel2 and run1 > run2):
+                    concordant_pairs += 1
+                elif qrel1 != qrel2:
+                    discordant_pairs += 1
 
-    if concordances + disconcordances > 0:
-        correctness = (concordances - disconcordances) / (
-            concordances + disconcordances
-        )
-    if orders > 0:
-        completeness = (concordances + disconcordances) / orders
+    correctness = (
+        (concordant_pairs - discordant_pairs) / (concordant_pairs + discordant_pairs)
+        if (concordant_pairs + discordant_pairs) > 0
+        else 0.0
+    )
+
+    completeness = (
+        (concordant_pairs + discordant_pairs) / total_pairs if total_pairs > 0 else 0.0
+    )
 
     return correctness, completeness
 
